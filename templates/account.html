@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+ <h1>Trainer Page</h1>
+    <p>Your page, {{ user.username }}</p>
+
+    <h2>Trainer Information</h2>
+    <p>{{ trainer_data.text }}</p>
+
+    <h2>Available Slots</h2>
+    <ul>
+        {% if available_slots %}
+            {% for slot in available_slots %}
+                <li>{{ slot }}</li>
+            {% endfor %}
+        {% else %}
+            <li>No available slots</li>
+        {% endif %}
+    </ul>
+
+    <h2>Training Types</h2>
+    <ul>
+        {% if trainer_services %}
+            {% for service in trainer_services %}
+                <li>
+                    <strong>{{ service.category.name }}</strong>: {{ service.level }} ({{ service.duration }} min, ${{ service.price }})
+                </li>
+            {% endfor %}
+        {% else %}
+            <li>No services available</li>
+        {% endif %}
+    </ul>
+
+    <h2>Trainer Schedule</h2>
+    <ul>
+        {% if trainer_schedule %}
+            {% for schedule in trainer_schedule %}
+                <li>{{ schedule.datetime_start }} - {{ schedule.datetime_end }}</li>
+            {% endfor %}
+        {% else %}
+            <li>No schedule available</li>
+        {% endif %}
+    </ul>
+</body>
+</html>

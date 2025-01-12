@@ -1,5 +1,5 @@
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 
@@ -23,12 +23,12 @@ def login_page(request):
         else:
             return render(request, "login.html")
 
-
 def logout_page(request):
     if request.user.is_authenticated:
         logout(request)
         return HttpResponse("logged_out")
     return HttpResponse('login first')
+
 def register_page(request):
     if request.method == "GET":
         return render(request, "register.html")
@@ -41,6 +41,9 @@ def register_page(request):
 
         user = User.objects.create_user(username=username, email=email, password=password, first_name=first_name,
                                         last_name=last_name)
+
+        trainer_groups = Group.object.get(name='Trainer')
+        user.groups.add(trainer_groups)
         user.save()
         return render(request, "register.html")
 

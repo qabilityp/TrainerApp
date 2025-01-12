@@ -17,6 +17,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+from trainer import views
+from users import views
+import trainer
 import users
 
 urlpatterns = [
@@ -25,6 +28,8 @@ urlpatterns = [
     path('login/', users.views.login_page, name='user_login'),
     path("logout/", users.views.logout_page, name="user_logout"),
     path("register/", users.views.register_page, name="user_register"),
+    path('register/trainer/', trainer.views.trainer_register, name='trainer_register'),
     path('trainers/', include('trainer.urls')),
+    path('service/', trainer.views.service_page, name='service'),
     path('booking/', include('booking.urls')),
 ]

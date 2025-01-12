@@ -15,6 +15,12 @@ class TrainerSchedule(models.Model):
     trainer = models.ForeignKey(TrainerDescription, on_delete=models.CASCADE)
 
 class Service(models.Model):
+    LEVEL_CHOICES = [
+        ('Easy', 'Easy'),
+        ('Medium', 'Medium'),
+        ('Hard', 'Hard'),
+    ]
+    level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default='Easy')
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     trainer = models.ForeignKey(User, on_delete=models.CASCADE)
     price = models.FloatField()

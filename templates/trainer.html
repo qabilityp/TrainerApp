@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>    
+<h1>My Services</h1>
+    <table border="1">
+        <tr>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Duration</th>
+            <th>Level</th>
+        </tr>
+        {% for service in my_services %}
+        <tr>
+            <td>{{ service.category.name }}</td>
+            <td>{{ service.price }}</td>
+            <td>{{ service.duration }}</td>
+            <td>{{ service.level }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+<h1>AddTrainerService</h1>
+<form action="/service/" method="post">
+<div>
+    {% csrf_token %}
+    category:
+    <select name="category">
+        {% for category in service_categories %}
+            <option value="{{ category.id }}">{{ category.name }}</option>
+        {% endfor %}
+    </select>
+    duration = <input type="number" name="duration">
+    price = <input type="number" name="price">
+    level:
+    <select name="level">
+        <option value="Easy">Easy</option>
+        <option value="Medium">Medium</option>
+        <option value="Hard">Hard</option>
+    </select>
+
+</div>
+<input type="submit">
+</form>
+</body>
+</html>
+
