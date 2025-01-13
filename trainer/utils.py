@@ -1,44 +1,36 @@
 from datetime import timedelta
 from re import search
 
-import booking
+import booking.models
+from trainer.models import TrainerSchedule
+from booking.models import Booking
 
 
-def divide_time_into_15min_intervals(trainer, start_time, end_time):
-    trainer_schedule = trainer.models.TrainerSchedule.objects.filter(trainer=trainer, datetime_start__date=start_time,
-                                                                     datetime_end__date=end_time)
-    thirty_mins = timedelta(minutes=15)
-    divided_schedule = []
+def divide_time_into_15min_intervals(start, end):
+    intervals = []
+    current = start
 
-    for entry in trainer_schedule:
-        start = entry.datetime_start
-        end = entry.datetime_end
-        parts = divide_time_into_15min_intervals(start, end)
-        divided_schedule.extend(parts)
+    while current < end:
+        next_time = current + timedelta(minutes=15)
+        intervals.append({"start": current, "end": next_time, "parts": [(current, "free")]})
+        current = next_time
 
-    return divided_schedule
+    return intervals
 
-def booking_time_discovery(trainer, service_id, date):
-    trainer_schedule = trainer.models.TrainerSchedule.objects.filter(trainer=trainer, datetime_start__date=date)
-    trainer_bookings = booking.models.Booking.objects.filter(trainer=trainer, datetime_start__date=date)
-    desired_service = trainer.models.Service.objects.get(pk=service_id)
-    search_window = desired_service.duration
+def booking_time_discovery(trainer, start, end):
+    schedule = TrainerSchedule.objects.filter(trainer__trainer_id=trainer, datetime_start__range=(start, end))
+    bookings = Booking.objects.filter(trainer=trainer, datetime_start__range=(start, end))
 
-    divided_schedule = divide_time_into_15min_intervals(trainer, date, date + timedelta(days=1))
+    intervals = divide_time_into_15min_intervals(start, end)
 
     available_slots = []
-    for entry in divided_schedule:
-        start = entry["start"]
-        end = entry["end"]
-        duration = end - start
-
-        if search_window <= duration:
-            parts = entry["parts"]
-            for part, status in parts:
-                if status == "Свободно":
-                    available_slots.append(part, duration)
-                    break
+    for interval in intervals:
+        start_time = interval["start"]
+        end_time = interval["end"]
+        schedule_overlaps = schedule.filter(datetime_start__lt=end_time, datetime_end__gt=start_time)
+        bookings_overlaps = bookings.filter(datetime_start__lt=end_time, datetime_end__gt=start_time)
+        if not schedule_overlaps.exists() and not bookings_overlaps.exists() and end_time > start_time:
+            available_slots.append((start_time, end_time))
 
     return available_slots
-
 
