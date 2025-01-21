@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+        <h1>Your Bookings</h1>
+
+    {% if bookings %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Trainer</th>
+                    <th>Price</th>
+                    <th>Duration</th>
+                    <th>Level</th>
+                    <th>Training Date</th>
+                    <th>Training Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in bookings %}
+                    <tr>
+                        <td>{{ booking.service_category }}</td>
+                        <td>{{ booking.trainer.first_name }} {{ booking.trainer.last_name }}</td>
+                        <td>{{ booking.service.price }}</td>
+                        <td>{{ booking.service.duration }} minutes</td>
+                        <td>{{ booking.service.level }}</td>
+                        <td>{{ booking.datetime_start|date:"Y-m-d" }}</td>
+                        <td>{{ booking.datetime_start|time:"H:i" }} - {{ booking.datetime_end|time:"H:i" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>You have no bookings yet.</p>
+    {% endif %}
+
+</body>
+</html>

@@ -6,21 +6,10 @@
 </head>
 <body>
  <h1>Trainer Page</h1>
-    <p>Your page, {{ user.username }}</p>
+    <p>{{ trainer.first_name }} {{ trainer.last_name }}</p>
 
     <h2>Trainer Information</h2>
     <p>{{ trainer_data.text }}</p>
-
-    <h2>Available Slots</h2>
-    <ul>
-        {% if available_slots %}
-            {% for slot in available_slots %}
-                <li>{{ slot }}</li>
-            {% endfor %}
-        {% else %}
-            <li>No available slots</li>
-        {% endif %}
-    </ul>
 
     <h2>Training Types</h2>
     <ul>

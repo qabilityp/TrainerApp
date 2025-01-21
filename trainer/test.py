@@ -42,8 +42,10 @@ class TestAvailableSlots(TestCase):
         start = timezone.localize(datetime.datetime(2022, 1, 1, 9))
         end = timezone.localize(datetime.datetime(2022, 1, 1, 11))
 
-        trainer_description = TrainerDescription.objects.create(
-            trainer=self.trainer,
+        trainer_description = TrainerSchedule.objects.create(
+            trainer=User.objects.get(id=1),
+            datetime_start=datetime.datetime(2022, 1, 1, 10, 0, 0),
+            datetime_end=datetime.datetime(2022, 1, 1, 11, 0, 0),
         )
 
         TrainerSchedule.objects.create(

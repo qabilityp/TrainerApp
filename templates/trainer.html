@@ -5,13 +5,33 @@
     <title>Title</title>
 </head>
 <body>    
-<h1>My Services</h1>
+    <h1>Trainer: {{ trainer.first_name }} {{ trainer.last_name }}</h1>
+    <p>{{ trainer_description.description }}</p>
+
+    <h2>Schedule</h2>
+    <table border="1">
+        <tr>
+            <th>Day</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+        </tr>
+        {% for schedule in trainer_schedule %}
+        <tr>
+            <td>{{ schedule.day }}</td>
+            <td>{{ schedule.start_time }}</td>
+            <td>{{ schedule.end_time }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h1>My Services</h1>
     <table border="1">
         <tr>
             <th>Category</th>
             <th>Price</th>
             <th>Duration</th>
             <th>Level</th>
+            <th>Action</th>
         </tr>
         {% for service in my_services %}
         <tr>
@@ -19,32 +39,36 @@
             <td>{{ service.price }}</td>
             <td>{{ service.duration }}</td>
             <td>{{ service.level }}</td>
+            <td>
+                <!-- Ссылка на бронирование тренировки -->
+                <a href="{% url 'trainer_service_page' trainer.id service.id %}">Book</a>
+            </td>
         </tr>
         {% endfor %}
     </table>
 
-<h1>AddTrainerService</h1>
-<form action="/service/" method="post">
-<div>
-    {% csrf_token %}
-    category:
-    <select name="category">
-        {% for category in service_categories %}
-            <option value="{{ category.id }}">{{ category.name }}</option>
-        {% endfor %}
-    </select>
-    duration = <input type="number" name="duration">
-    price = <input type="number" name="price">
-    level:
-    <select name="level">
-        <option value="Easy">Easy</option>
-        <option value="Medium">Medium</option>
-        <option value="Hard">Hard</option>
-    </select>
+    <h1>Add Trainer Service</h1>
+    <form action="/service/" method="post">
+        <div>
+            {% csrf_token %}
+            Category:
+            <select name="category">
+                {% for category in service_categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+            Duration: <input type="number" name="duration">
+            Price: <input type="number" name="price">
+            Level:
+            <select name="level">
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+            </select>
+        </div>
+        <input type="submit" value="Add Service">
+    </form>
 
-</div>
-<input type="submit">
-</form>
 </body>
 </html>
 

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<h1>List of Trainers</h1>
+    <ul>
+        {% for data in trainers_data %}
+        <li>
+            <h2>
+                <!-- Ссылка на профиль тренера -->
+                <a href="{% url 'trainer_page' data.trainer.id %}">
+                    {{ data.trainer.first_name }} {{ data.trainer.last_name }}
+                </a>
+            </h2>
+            <p>{{ data.description.description }}</p>
+
+            <h3>Services</h3>
+            <table border="1">
+                <tr>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Duration</th>
+                    <th>Level</th>
+                    <th>Action</th>
+                </tr>
+                {% for service in data.services %}
+                <tr>
+                    <td>{{ service.category.name }}</td>
+                    <td>{{ service.price }}</td>
+                    <td>{{ service.duration }}</td>
+                    <td>{{ service.level }}</td>
+                    <td>
+                        <!-- Ссылка на бронирование времени -->
+                        <a href="{% url 'trainer_service_page' data.trainer.id service.id %}">
+                            Book
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </li>
+        {% endfor %}
+    </ul>
+
+</body>
+</html>

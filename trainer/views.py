@@ -1,65 +1,122 @@
-from datetime import date
+from collections import defaultdict
+from datetime import datetime, timedelta, date, time
 
+from django.contrib import messages
+from dateutil.parser import parse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User, Group
-from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotAllowed
+from django.core.exceptions import ValidationError
+from django.db.models import Min, Max
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+from django.utils.timezone import make_aware
 
-import booking
 import trainer
-from trainer.models import TrainerDescription, Service
+from booking.models import Booking
+from trainer.models import TrainerDescription, Service, TrainerSchedule, Category
 from trainer.utils import booking_time_discovery
 
 
 # Create your views here.
 def index(request):
-    service_categories = trainer.models.Category.objects.all()
-    my_services = trainer.models.Service.objects.filter(trainer=request.user).all()
-    return render(request, 'trainer.html', {'service_categories': service_categories,
-                                                'my_services': my_services})
+    if request.method == 'GET':
+        trainers = TrainerDescription.objects.select_related('trainer').all()
+        trainers_data = []
 
-def trainer_page(request, trainer_id=None, service_id=None):
-    if request.user.groups.filter(name='Trainer').exists():
-        if request.method == 'GET':
-            service_categories = trainer.models.Category.objects.all()
-            my_services = trainer.models.Service.objects.filter(trainer=request.user).all()
-            return render(request, 'trainer.html', {'service_categories': service_categories,
-                                                    'my_services': my_services})
-        return HttpResponse('Hello , trainer page')
+        for trainer_description in trainers:
+
+            my_services = Service.objects.filter(trainer=trainer_description.trainer)
+
+            trainers_data.append({
+                'trainer': trainer_description.trainer,
+                'description': trainer_description.text,
+                'services': my_services,
+            })
+
+        return render(request, 'trainers.html', {'trainers_data': trainers_data})
+
+def trainer_page(request, trainer_id):
+    trainer = get_object_or_404(User, id=trainer_id)
+
+    trainer_data = get_object_or_404(TrainerDescription, trainer=trainer)
+
+    trainer_schedule = TrainerSchedule.objects.filter(trainer=trainer).exclude(datetime_end__isnull=True)
+    for schedule in trainer_schedule:
+        if schedule.datetime_start is not None:
+            schedule.datetime_start = make_aware(datetime.fromtimestamp(schedule.datetime_start / 1000))
+        if schedule.datetime_end is not None:
+            schedule.datetime_end = make_aware(datetime.fromtimestamp(schedule.datetime_end / 1000))
+
+    trainer_services = Service.objects.filter(trainer=trainer)
+
+    service_categories = Category.objects.all()
+
+    return render(request, 'account.html', {
+        'trainer_data': trainer_data,
+        'trainer_schedule': trainer_schedule,
+        'trainer_services': trainer_services,
+        'service_categories': service_categories,
+        'trainer': trainer,
+        'user': request.user
+    })
+
+def trainer_service_page(request, trainer_id, service_id):
+    current_trainer = User.objects.get(id=trainer_id)
+    specific_service = Service.objects.get(id=service_id)
+
+    if request.method == 'GET':
+        available_times = {}
+        days_from_now = 1
+        today = make_aware(datetime.now())
+        while days_from_now <= 5:
+            cur_date = today + timedelta(days=days_from_now)
+            available_slots = trainer.utils.booking_time_discovery(current_trainer, cur_date)
+            if available_slots:
+                available_times[cur_date.date()] = available_slots
+            days_from_now += 1
+
+
+        return render(request, "trainer_service_page.html",
+                      context={'available_times': dict(available_times), 'specific_service': specific_service})
+
     else:
-        trainer_data = get_object_or_404(TrainerDescription, pk=trainer_id)
-        trainer_user = trainer_data.trainer
+        booking_time_str = request.POST['booking-time'].strip("()").replace("'", "")
+        booking_start_end = booking_time_str.split(", ")
+        booking_start = datetime.strptime(booking_start_end[0],"%Y-%m-%d %H:%M")
+        booking_end = datetime.strptime(booking_start_end[1],"%Y-%m-%d %H:%M")
+        booking_start = make_aware(booking_start)
+        booking_end = make_aware(booking_end)
+        current_user = User.objects.get(id=request.user.id)
+        Booking.objects.create(
+            trainer=current_trainer,
+            user=current_user,
+            service=specific_service,
+            datetime_start=booking_start,
+            datetime_end=booking_end
+        )
+        messages.success(request, 'Your booking has been successfully created!')
 
-        trainer_schedule = trainer.models.TrainerSchedule.objects.filter(trainer=trainer_data)
+        return redirect('my_bookings')
 
-        trainer_services = trainer.models.Service.objects.filter(trainer=trainer_user)
+def my_bookings(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
 
-        available_slots = []
-        if service_id:
-            desired_service = get_object_or_404(Service, pk=service_id)
-            available_slots = booking_time_discovery(trainer_user, service_id)
-        context = {
-            'user': request.user,
-            'trainer_data': trainer_data,
-            'trainer_schedule': trainer_schedule,
-            'available_slots': available_slots,
-            'trainer_services': trainer_services,
-        }
-    print(f"Trainer Data: {trainer_data}")
-    print(f"Trainer Schedule: {trainer_schedule}")
-    print(f"Available Slots: {available_slots}")
-    print(f"Trainer Services: {trainer_services}")
-
-    return render(request, 'account.html', {'context': context})
+    current_user = request.user
+    bookings = Booking.objects.filter(user=current_user).all()
+    for booking in bookings:
+        booking.service_category = booking.service.category.name
+    return render(request, 'success.html', context={'bookings': bookings})
 
 
-def trainer_page_category(request, category_id):
+def trainer_page_category(request):
     return HttpResponse("Welcome to the trainer selection page")
 
 @login_required
 def service_page(request):
     if request.method == 'GET':
-        service = trainer.Service.objects.all()
+        service = Service.objects.all()
         service_categories = trainer.models.Category.objects.all()
         return render(request, 'services.html', {'service': service,
                                                  'service_categories': service_categories})
@@ -75,11 +132,11 @@ def service_page(request):
                 trainer=request.user,
             )
             service.save()
-            return redirect('/trainer/')
+            return redirect('/trainers/')
         else:
             return HttpResponseForbidden()
 
-def trainer_page_id_service_booking(request, service_id):
+def trainer_page_id_service_booking(request):
     return HttpResponse("Welcome to the trainer selection page")
 
 def trainer_register(request):

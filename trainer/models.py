@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.contrib.auth.models import User
 from django.db import models
 
@@ -10,9 +12,9 @@ class TrainerDescription(models.Model):
     trainer = models.ForeignKey(User, on_delete=models.CASCADE)
 
 class TrainerSchedule(models.Model):
-    datetime_start = models.DateTimeField()
-    datetime_end = models.DateTimeField()
-    trainer = models.ForeignKey(TrainerDescription, on_delete=models.CASCADE)
+    datetime_start = models.DateTimeField(null=True, blank=True)
+    datetime_end = models.DateTimeField(null=True, blank=True)
+    trainer = models.ForeignKey(User, on_delete=models.CASCADE)
 
 class Service(models.Model):
     LEVEL_CHOICES = [
