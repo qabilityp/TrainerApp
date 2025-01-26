@@ -14,6 +14,7 @@ from django.utils.timezone import make_aware
 
 import trainer
 from booking.models import Booking
+from trainer.forms import TrainerScheduleForm
 from trainer.models import TrainerDescription, Service, TrainerSchedule, Category
 from trainer.utils import booking_time_discovery
 
@@ -41,12 +42,19 @@ def trainer_page(request, trainer_id):
 
     trainer_data = get_object_or_404(TrainerDescription, trainer=trainer)
 
-    trainer_schedule = TrainerSchedule.objects.filter(trainer=trainer).exclude(datetime_end__isnull=True)
-    for schedule in trainer_schedule:
-        if schedule.datetime_start is not None:
-            schedule.datetime_start = make_aware(datetime.fromtimestamp(schedule.datetime_start / 1000))
-        if schedule.datetime_end is not None:
-            schedule.datetime_end = make_aware(datetime.fromtimestamp(schedule.datetime_end / 1000))
+    trainer_schedule = TrainerSchedule.objects.filter(trainer=trainer)
+
+    schedules = TrainerSchedule.objects.filter(datetime_end__isnull=True)
+
+    # Update them with a calculated datetime_end (1 hour after datetime_start)
+    for schedule in schedules:
+        if schedule.datetime_start:
+            schedule.datetime_end = schedule.datetime_start + timedelta(hours=1)
+            schedule.save()
+
+    # Verify the updates
+    for schedule in schedules:
+        print(f"Schedule ID: {schedule.id}, Start: {schedule.datetime_start}, End: {schedule.datetime_end}")
 
     trainer_services = Service.objects.filter(trainer=trainer)
 
@@ -115,26 +123,46 @@ def trainer_page_category(request):
 
 @login_required
 def service_page(request):
+    if request.user.groups.filter(name='Trainer').exists():
+        trainer_current = request.user
+    else:
+        return HttpResponseForbidden("you are not a trainer")
+
     if request.method == 'GET':
-        service = Service.objects.all()
-        service_categories = trainer.models.Category.objects.all()
-        return render(request, 'services.html', {'service': service,
-                                                 'service_categories': service_categories})
-    if request.method == "POST":
-        if request.user.groups.filter(name='Trainer').exists():
-            form_data = request.POST
-            service_categories = trainer.models.Category.objects.get(pk=form_data['category'])
-            service = trainer.models.Service(
+        trainer_description = TrainerDescription.objects.get(trainer=trainer_current)
+        trainer_schedule = TrainerSchedule.objects.filter(trainer=trainer_current)
+        my_services = Service.objects.filter(trainer=trainer_current)
+        service_categories = Category.objects.all()
+        schedule_form = TrainerScheduleForm()
+
+        return render(request, 'trainer.html', {
+            'trainer': trainer_current,
+            'trainer_description': trainer_description,
+            'trainer_schedule': trainer_schedule,
+            'my_services': my_services,
+            'service_categories': service_categories,
+            'schedule_form': schedule_form,
+        })
+
+    if request.method == 'POST':
+        form_data = request.POST
+        if 'category' in form_data:  # Добавление услуги
+            category = Category.objects.get(pk=form_data['category'])
+            service = Service(
                 level=form_data['level'],
                 duration=form_data['duration'],
                 price=form_data['price'],
-                category=service_categories,
-                trainer=request.user,
+                category=category,
+                trainer=trainer_current,
             )
             service.save()
-            return redirect('/trainers/')
-        else:
-            return HttpResponseForbidden()
+        elif 'add_schedule' in request.POST:  # Добавление расписания
+            schedule_form = TrainerScheduleForm(request.POST)
+            if schedule_form.is_valid():
+                new_schedule = schedule_form.save(commit=False)
+                new_schedule.trainer = trainer_current
+                new_schedule.save()
+        return redirect('service_page')
 
 def trainer_page_id_service_booking(request):
     return HttpResponse("Welcome to the trainer selection page")

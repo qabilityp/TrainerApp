@@ -42,7 +42,7 @@ def register_page(request):
         user = User.objects.create_user(username=username, email=email, password=password, first_name=first_name,
                                         last_name=last_name)
 
-        trainer_groups = Group.object.get(name='Trainer')
+        trainer_groups = Group.objects.get(name='Trainer')
         user.groups.add(trainer_groups)
         user.save()
         return render(request, "register.html")

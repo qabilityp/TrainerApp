@@ -7,23 +7,18 @@
 <body>    
     <h1>Trainer: {{ trainer.first_name }} {{ trainer.last_name }}</h1>
     <p>{{ trainer_description.description }}</p>
-
-    <h2>Schedule</h2>
-    <table border="1">
-        <tr>
-            <th>Day</th>
-            <th>Start Time</th>
-            <th>End Time</th>
-        </tr>
-        {% for schedule in trainer_schedule %}
-        <tr>
-            <td>{{ schedule.day }}</td>
-            <td>{{ schedule.start_time }}</td>
-            <td>{{ schedule.end_time }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-
+    
+  <h2>Trainer Schedule</h2>
+    <ul>
+        {% if trainer_schedule %}
+            {% for schedule in trainer_schedule %}
+                <li>{{ schedule.datetime_start }} - {{ schedule.datetime_end }}</li>
+            {% endfor %}
+        {% else %}
+            <li>No schedule available</li>
+        {% endif %}
+    </ul>
+    
     <h1>My Services</h1>
     <table border="1">
         <tr>
@@ -31,7 +26,6 @@
             <th>Price</th>
             <th>Duration</th>
             <th>Level</th>
-            <th>Action</th>
         </tr>
         {% for service in my_services %}
         <tr>
@@ -39,14 +33,17 @@
             <td>{{ service.price }}</td>
             <td>{{ service.duration }}</td>
             <td>{{ service.level }}</td>
-            <td>
-                <!-- Ссылка на бронирование тренировки -->
-                <a href="{% url 'trainer_service_page' trainer.id service.id %}">Book</a>
-            </td>
         </tr>
         {% endfor %}
     </table>
-
+    
+    <h2>Add Schedule</h2>
+    <form method="post">
+    {% csrf_token %}
+        {{ schedule_form.as_p }}
+    <button type="submit" name="add_schedule">Add Schedule</button>
+</form>
+    
     <h1>Add Trainer Service</h1>
     <form action="/service/" method="post">
         <div>

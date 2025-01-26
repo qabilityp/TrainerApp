@@ -12,9 +12,12 @@ class TrainerDescription(models.Model):
     trainer = models.ForeignKey(User, on_delete=models.CASCADE)
 
 class TrainerSchedule(models.Model):
-    datetime_start = models.DateTimeField(null=True, blank=True)
-    datetime_end = models.DateTimeField(null=True, blank=True)
+    datetime_start = models.DateTimeField(verbose_name='Datetime start', auto_now=False, null=False)
+    datetime_end = models.DateTimeField(verbose_name='Datetime end', auto_now=False, null=False)
     trainer = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.trainer.username} ({self.datetime_start} - {self.datetime_end})"
 
 class Service(models.Model):
     LEVEL_CHOICES = [

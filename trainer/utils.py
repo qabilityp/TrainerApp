@@ -1,4 +1,7 @@
 from datetime import datetime, time, timedelta
+import os
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'TrainerApp.settings')
 
 from django.utils.timezone import make_aware
 
