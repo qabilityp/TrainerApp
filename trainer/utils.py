@@ -1,11 +1,14 @@
 from datetime import datetime, time, timedelta
 import os
 
+from trainer.models import TrainerSchedule
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'TrainerApp.settings')
 
 from django.utils.timezone import make_aware
 
 from booking.models import Booking
+
 
 def booking_time_discovery(trainer, date):
     start_of_day = make_aware(datetime(date.year, date.month, date.day, 8, 0, 0))

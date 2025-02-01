@@ -37,34 +37,20 @@
         {% endfor %}
     </table>
     
-    <h2>Add Schedule</h2>
-    <form method="post">
+<h2>Add Schedule</h2>
+<form method="post">
     {% csrf_token %}
-        {{ schedule_form.as_p }}
+    {{ schedule_form.as_p }}
     <button type="submit" name="add_schedule">Add Schedule</button>
 </form>
-    
-    <h1>Add Trainer Service</h1>
-    <form action="/service/" method="post">
-        <div>
-            {% csrf_token %}
-            Category:
-            <select name="category">
-                {% for category in service_categories %}
-                    <option value="{{ category.id }}">{{ category.name }}</option>
-                {% endfor %}
-            </select>
-            Duration: <input type="number" name="duration">
-            Price: <input type="number" name="price">
-            Level:
-            <select name="level">
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-            </select>
-        </div>
-        <input type="submit" value="Add Service">
-    </form>
+
+<h1>Add Trainer Service</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ service_form.as_p }}
+    <button type="submit" name="add_service">Add Service</button>
+</form>
+
 
 </body>
 </html>

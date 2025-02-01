@@ -12,11 +12,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.utils.timezone import make_aware
 
-import trainer
 from booking.models import Booking
 from trainer.forms import TrainerScheduleForm
 from trainer.models import TrainerDescription, Service, TrainerSchedule, Category
 from trainer.utils import booking_time_discovery
+from users.forms import TrainerRegisterForm, ServiceForm
 
 
 # Create your views here.
@@ -77,13 +77,13 @@ def trainer_service_page(request, trainer_id, service_id):
         available_times = {}
         days_from_now = 1
         today = make_aware(datetime.now())
+
         while days_from_now <= 5:
             cur_date = today + timedelta(days=days_from_now)
-            available_slots = trainer.utils.booking_time_discovery(current_trainer, cur_date)
+            available_slots = booking_time_discovery(current_trainer, cur_date)
             if available_slots:
                 available_times[cur_date.date()] = available_slots
             days_from_now += 1
-
 
         return render(request, "trainer_service_page.html",
                       context={'available_times': dict(available_times), 'specific_service': specific_service})
@@ -123,16 +123,42 @@ def trainer_page_category(request):
 
 @login_required
 def service_page(request):
-    if request.user.groups.filter(name='Trainer').exists():
-        trainer_current = request.user
-    else:
-        return HttpResponseForbidden("you are not a trainer")
+    if not request.user.groups.filter(name='Trainer').exists():
+        return HttpResponseForbidden("You are not a trainer")
 
-    if request.method == 'GET':
+    trainer_current = request.user
+
+    if request.method == 'POST':
+        if 'add_service' in request.POST:  # Добавление услуги
+            service_form = ServiceForm(request.POST)
+            if service_form.is_valid():
+                service = service_form.save(commit=False)
+                service.trainer = trainer_current
+                service.save()
+            else:
+                return render(request, 'trainer.html', {
+                    'trainer': trainer_current,
+                    'service_form': service_form,
+                })
+        elif 'add_schedule' in request.POST:  # Добавление расписания
+            schedule_form = TrainerScheduleForm(request.POST)
+            if schedule_form.is_valid():
+                schedule = schedule_form.save(commit=False)
+                schedule.trainer = trainer_current
+                schedule.save()
+            else:
+                return render(request, 'trainer.html', {
+                    'trainer': trainer_current,
+                    'schedule_form': schedule_form,
+                })
+        return redirect('service_page')
+    else:
         trainer_description = TrainerDescription.objects.get(trainer=trainer_current)
         trainer_schedule = TrainerSchedule.objects.filter(trainer=trainer_current)
         my_services = Service.objects.filter(trainer=trainer_current)
         service_categories = Category.objects.all()
+
+        service_form = ServiceForm()
         schedule_form = TrainerScheduleForm()
 
         return render(request, 'trainer.html', {
@@ -141,49 +167,26 @@ def service_page(request):
             'trainer_schedule': trainer_schedule,
             'my_services': my_services,
             'service_categories': service_categories,
+            'service_form': service_form,
             'schedule_form': schedule_form,
         })
 
-    if request.method == 'POST':
-        form_data = request.POST
-        if 'category' in form_data:  # Добавление услуги
-            category = Category.objects.get(pk=form_data['category'])
-            service = Service(
-                level=form_data['level'],
-                duration=form_data['duration'],
-                price=form_data['price'],
-                category=category,
-                trainer=trainer_current,
-            )
-            service.save()
-        elif 'add_schedule' in request.POST:  # Добавление расписания
-            schedule_form = TrainerScheduleForm(request.POST)
-            if schedule_form.is_valid():
-                new_schedule = schedule_form.save(commit=False)
-                new_schedule.trainer = trainer_current
-                new_schedule.save()
-        return redirect('service_page')
 
 def trainer_page_id_service_booking(request):
     return HttpResponse("Welcome to the trainer selection page")
 
 def trainer_register(request):
-    if request.user.groups.filter(name='Trainer').exists():
-        if request.method == 'GET':
-            return render(request, 'trainer_signup.html')
-        else:
-            if request.user.groups.filter(name='Trainer').exists():
-                username = request.POST['username']
-                password = request.POST['password']
-                email = request.POST['email']
-                first_name = request.POST['first_name']
-                last_name = request.POST['last_name']
-
-                user = User.objects.create_user(username=username, email=email, password=password, first_name=first_name,
-                                                last_name=last_name)
-
+    if request.method == 'POST':
+        form = TrainerRegisterForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            if not request.user.groups.filter(name='Trainer').exists():
                 trainer_group = Group.objects.get(name='Trainer')
                 user.groups.add(trainer_group)
                 user.save()
-                return HttpResponse("Trainer registration successful")
+            messages.success(request, 'Trainer registration successful!')
+            return HttpResponse("Trainer registration successful")
+    else:
+        form = TrainerRegisterForm()
+    return render(request, 'trainer_signup.html', {'form': form})
 

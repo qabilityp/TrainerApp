@@ -7,35 +7,27 @@
 <body>
    <h1>Services</h1>
     <ul>
-        {% for service in service %}
+        {% for service in my_services %}
             <li>
                 Category: {{ service.category.name }} <br>
                 Level: {{ service.level }} <br>
                 Duration: {{ service.duration }} minutes <br>
                 Price: ${{ service.price }}
             </li>
-        {% endfor %}
-    <h1>Add Trainer Service</h1>
-    <form action="/service/" method="post">
-        <div>
-            {% csrf_token %}
-            Category:
-            <select name="category">
-                {% for category in service_categories %}
-                    <option value="{{ category.id }}">{{ category.name }}</option>
-                {% endfor %}
-            </select>
-            Duration: <input type="number" name="duration">
-            Price: <input type="number" name="price">
-            Level:
-            <select name="level">
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-            </select>
-        </div>
-        <input type="submit" value="Add Service">
-    </form>
-    </ul>
+            </ul>
+        {% endfor %}<h1>Add Trainer Service</h1>
+<form action="/service/" method="post">
+    {% csrf_token %}
+    {{ service_form.as_p }}
+    <input type="submit" name="add_service" value="Add Service">
+</form>
+
+<h1>Add Trainer Schedule</h1>
+<form action="/service/" method="post">
+    {% csrf_token %}
+    {{ schedule_form.as_p }}
+    <input type="submit" name="add_schedule" value="Add Schedule">
+</form>
+
 </body>
 </html>
